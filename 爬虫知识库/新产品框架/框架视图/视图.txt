@@ -1,0 +1,194 @@
+ 运营管理系统 v1.0 — 程序结构文档
+
+文件路径：C:/Users/77662/Documents/New project/ops-system/运营系统.html
+文件类型：单文件 HTML（内嵌 CSS + JS）
+外部依赖：ECharts 5.5.0（CDN）、china.json 地图数据
+布局模式：左侧 220px 导航栏 + 右侧自适应内容区（flex 布局）
+
+一、整体布局结构
+
+ app-container (flex, 100vh)
+ │
+ ├── aside.sidebar (220px)
+ │ ├── .sidebar-logo → 运营系统 Logo + 名称
+ │ └── nav#sidebarMenu → 7 个菜单项（见"第三节"）
+ │
+ ├── .main-content (flex:1)
+ │ ├── header.top-nav → 页面标题 + 搜索框 + 状态指示 + 时钟 + 头像
+ │ │
+ │ └── .page-container → 7 个页面（.page，仅 .active 显示）
+ │ ├── #page-dashboard → 数据面板
+ │ ├── #page-monitor → 评论监听
+ │ ├── #page-filter → 筛选词库
+ │ ├── #page-push → 推送通知
+ │ ├── #page-accounts → 账号管理
+ │ ├── #page-pm → 私信配置
+ │ └── #page-ai → AI 配置
+
+二、色彩系统（CSS 变量级）
+
+ 基础色 #4a7cf7 蓝色主调 #6c5ce7 紫色辅调
+ 背景 #0a0e1a 深蓝黑底 rgba(26,34,68,0.5~0.6) 毛玻璃卡片
+ 文字 #d0d8f0 / #c0c8e0 主要/次要文字
+ 边框 rgba(255,255,255,0.04~0.08) 低透明度白线
+ JS常量 COLORS = { blue cyan green orange red purple pink yellow }
+
+三、侧边栏（7 个栏目）
+
+ 序号 数据页面 图标(SVG) 说明
+ ──── ──────────── ────────────────── ─────────────────────────
+ 1 数据面板 四方格 icon 8 卡片 + ECharts 地图/折线 + 省份排行
+ 2 评论监听 eye icon + LIVE 角标 实时评论流（抖音/小红书）+ 统计
+ 3 筛选词库 漏斗 icon 关键词库 + 排除词库 + 命中率
+ 4 推送通知 铃铛 icon 微信/钉钉/飞书 Webhook 配置
+ 5 账号管理 双人 icon 8 账号卡片 + 频率控制参数
+ 6 私信配置 气泡 icon 私信模板 + 敏感词 + 频限滑块
+ 7 AI 配置 时钟 icon 模型参数 + 对话测试区
+
+四、各页面组件树
+
+ [1] 数据面板 (dashboard)
+ ├── .stats-grid (8列) → 8 个 stat-card
+│ 今日客户 | 私信任务 | 私信成功 | 私信失败
+ │ 今日线索 | 在线账号 | 留资 | 回复数
+└── .charts-row (1.6:1)
+├── .chart-box → ECharts 中国地图（省份热力图）
+└── .right-panels
+├── .rank-list → TOP10 省份排行
+└── .chart-box → 近7日折线图
+ └── .monitor-row (3列) → 系统运维面板
+     ├── #panelRuntime → 运行状态（WV实例/循环周期/网络/阶段/线程池）
+     ├── #panelAccounts → 账号监控（3 IP × 5 账号在线/发送量/进度条）
+     └── #panelHealth → 系统健康（CPU/内存/运行时长/崩溃/队列/Socket）
+
+ [2] 评论监听 (monitor)
+ ├── .monitor-head
+ │ ├── .platform-tabs → 抖音/小红书 切换
+ │ └── .monitor-status → 运行状态 + 捕获计数
+ └── .monitor-grid (2:1)
+ ├── .monitor-live → .comment-feed（8 条模拟评论卡片，4秒刷新）
+ └── .monitor-stats → successData/failData/skipData/成功率/WV实例/线程池
+
+ [3] 筛选词库 (filter)
+ ├── .filter-grid (1:1)
+ │ ├── .filter-left
+ │ │ ├── 输入框 + 分组下拉 + 添加按钮
+ │ │ └── .tag-cloud → KEYWORDS[20] 蓝色圆角标签（可 × 删除）
+ │ └── .filter-right
+ │ ├── 输入框 + 添加按钮
+ │ └── .tag-cloud → EXCLUDES[10] 红色圆角标签（可 × 删除）
+ └── .filter-bottom
+ └── 4 列统计：总评论(蓝) | 触发命中(绿) | 排除过滤(红) | 有效命中率(紫)
+
+ [4] 推送通知 (push)
+ ├── .push-grid (3列) → 3 张 push-card
+ │ ├── 微信机器人 ← webhook输入 + 启用开关 + 测试按钮
+ │ ├── 钉钉机器人
+ │ └── 飞书机器人
+ └── .notif-settings → 新评论通知 + 意向客户通知（两个 toggle）
+
+ [5] 账号管理 (accounts)
+ ├── .accounts-bar → [+添加账号] 按钮 / 数量统计
+ ├── .accounts-grid (auto-fill minmax 280px) → 8 张 account-card
+ │ ├── 平台标签(抖音黑/小红书红) + 在线状态(绿●/红○)
+ │ └── 账号名 + UID + 累计私信 + 今日发送 + Cookie隔离状态
+ └── .acct-freq (4列)
+ 私信间隔1=15s | 私信间隔2=35s | 账号轮换=360s | 并发线程=15
+
+ [6] 私信配置 (pm)
+ └── .pm-grid (3列) → 3 张 pm-card
+ ├── 私信设置 ← 启用开关 + 3条私信模板预览
+ ├── 敏感词处理 ← 启用开关 + 词库128词
+ └── 频率限制 ← 每分钟/每小时/每天 三滑块
+
+ [7] AI 配置 (ai)
+ └── .ai-grid (1:1)
+ ├── .ai-left
+ │ ├── 温度滑块(0.7) + 核采样滑块(0.9) + 最大输出滑块(1024)
+ │ └── 系统提示词 textarea（人设编辑）
+ └── .ai-right
+ ├── .chat-box → 对话气泡（AI左蓝/用户右深蓝）
+ └── .chat-input-row → 输入框 + 发送按钮（Enter触发）
+
+五、JavaScript 模块清单
+
+ 模块 关键函数/变量 行功能说明
+ ────────────────── ──────────────────────── ──────────────────────────
+ Setup常量 COLORS, rand(), randDec() 颜色与随机数工具
+ 数据面板 STATS[8], genStats(), 8卡片渲染 + ECharts初始化
+ renderStats(), PROVINCES 地图数据 + 曲线图
+ 排行 renderRank(data) TOP10省份排序渲染
+ 推送通知 PUSH_PLATFORMS[3], 3平台卡片 + toggle + 测试
+ renderPush(), testPush() 推送设置项渲染
+ 私信配置 TEMPLATES[3], renderPM() 3卡片渲染(模板/敏感词/频率)
+ AI配置 renderAI(), sendChat() 参数滑块 + 对话模拟(500ms)
+ 评论监听 ★ SAMPLE_COMMENTS[8], 8条模拟评论 + 4秒轮询
+ renderMonitor(p), 抖音/小红书切换 + 统计刷新
+ startMonitorPoll(p)
+ 筛选词库 ★ KEYWORDS[20], EXCLUDES[10], 双词库标签云渲染
+ renderFilter(), 增(addX)/删(removeX)交互
+ addKeyword(), addExclude()
+ 账号管理 ★ ACCOUNTS[8], 8张账号卡片 + 频率面板
+ renderAccounts(), 动态添加账号
+ renderAcctFreq(), addAccount()
+ 导航路由 querySelectorAll监听 菜单点击 → .active切换 →
+ 标题同步 → 图表resize
+ 时钟 updateClock() 每秒刷新顶部时钟
+ 数据轮询 refreshData() 8秒自动刷新数据面板
+ 初始化 init() ECharts加载 + 7页面init
+ + 平台tab事件绑定
+
+六、CSS 模块分层
+
+ 层级 选择器范围 作用
+ ───────────────── ─────────────────────────── ──────────────────────
+ Reset * margin/padding/box-sizing 全局归零
+ Scrollbar ::-webkit-scrollbar 5px细滚动条（#2a3050）
+ Layout .app-container / .sidebar flex水平布局 + 220px侧栏
+ Sidebar .menu-item / .active / .badge 菜单项hover/active态 + 角标
+ TopNav .top-nav / .search-box 顶栏搜索框聚焦态 + 状态点
+ Glass Card .glass-card backdrop-blur毛玻璃卡片
+ Dashboard .stats-grid / .charts-row 8列卡片网格 + 图表区
+ Toggle Switch .toggle / .slider CSS纯滑块开关
+ Buttons .btn / .btn-primary / .btn-sm 3级按钮体系
+ Push Notification .push-grid / .push-card 3列推送卡片布局
+ Private Message .pm-grid / .template-item 3列私信卡片 + 模板项
+ AI Config .ai-grid / .chat-msg 2列AI面板 + 对话气泡
+ Monitor Page ★ .monitor-head / .monitor-grid 平台tab + 评论流 + 统计
+ Filter Page ★ .filter-grid / .tag-cloud / .tag-item 双栏词库 + 标签
+ Accounts Page ★ .accounts-grid / .account-card 自适应卡片网格 + 频率面板
+ Responsive @media 1400/1200/768px 4级响应式断点
+
+★ 标记 = 本次新增模块
+
+七、数据流
+
+ refreshData() [每8秒]
+ │
+ ├── genStats() → renderStats() → 8个统计卡片刷新
+ ├── PROVINCES随机 + renderRank() → 排行榜刷新
+ └── mapChart.setOption / lineChart.setOption → 图表刷新
+
+ startMonitorPoll('douyin'|'xhs') [每4秒]
+ │
+ └── renderMonitor(platform) → 8条模拟评论洗牌渲染
+ ├── 命中标签 (green) / 跳过标签 (red)
+ └── successData / failData / skipData / 成功率 刷新
+
+ 用户交互
+ ├── [筛选词库] addKeyword() → KEYWORDS.push() → renderFilter()
+ ├── [筛选词库] removeKeyword(k) → KEYWORDS.splice() → renderFilter()
+ ├── [账号管理] addAccount() → ACCOUNTS.push() → renderAccounts()
+ ├── [AI配置] sendChat() → chatBox innerHTML追加 → 500ms模拟回复
+ └── [推送通知] testPush(id) → 800~1400ms模拟API → 成功/失败显示
+
+八、响应式断点
+
+ 宽度 变化
+ ──────────────── ──────────────────────────────
+ >1400px 完整布局（8列卡片）
+ ≤1400px 统计卡片变4列
+ ≤1200px 图表区变单列、3列卡片区变单列
+ ≤768px 侧边栏收窄至60px（仅图标）
+
+ 文档结束 | 2026-07-08
